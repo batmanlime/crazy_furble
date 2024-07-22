@@ -270,7 +270,7 @@ function uploadDLC(dlcbuf: any, filename: string, progresscb: (pos: number,size:
     isTransferring = false;
     let sendPos = 0;
     let rxPackets = 0;
-    let CHUNK_SIZE = 20;
+    let CHUNK_SIZE = 20*4; //20;
     let MAX_BUFFERED_PACKETS = 10;
     let maxRx = 0;
     let failedWrites = 0;
