@@ -71,7 +71,12 @@
 		{/if}
 		{:else}
 		<h1 class="h1 text-center">Select DLC!</h1>
-		<section>
+		<button class="btn variant-filled-primary" on:click={async () => {
+			loading = true
+			await furby.doDisconnect()
+			loading = false
+		}}>Disconnect</button>
+		<div>
 			{#each Object.entries(furby.dlcdata) as [file,data]}
 			<button class="btn variant-filled-secondary" on:click={async () => {
 				console.log("Run",file)
@@ -81,14 +86,14 @@
 				loading = false
 			}}>{data.title}</button>
 			{/each}
-		</section>
-		<section>
+		</div>
+		<div>
 			<button class="btn variant-filled-secondary" on:click={async () => {
 				loading = true
 				await furby.deleteAllDLCSlots()
 				loading = false
 			}}>Clear all DLCs</button>
-		</section>
+		</div>
 		{/if}
 	</div>
 	{:else}
@@ -97,14 +102,14 @@
 		<button class="btn variant-filled-secondary" on:click={async () => {
 			dlcButtons = []
 		}}>Back</button>
-		<section>
+		<div>
 			{#each dlcButtons as button}
 			<button class="btn variant-filled-secondary" on:click={async () => {
 				console.log("Action",button.title,button.action)
 				furby.triggerAction.apply(null, button.action)
 			}}>{button.title}</button>
 			{/each}
-		</section>
+		</div>
 	</div>
 	{/if}
 	{/if}

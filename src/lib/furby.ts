@@ -565,6 +565,15 @@ function startKeepAlive() {
     }, 1000);
 }
 
+export async function doDisconnect() {
+    try {
+      log('Disconnecting from GATT Server...');
+      device.gatt.disconnect();
+    } catch (e) {
+      log('Argh! ' + e);
+    }
+}
+
 export async function doConnect() {
     log('Requesting Bluetooth Devices with Furby name...');
     var server;
