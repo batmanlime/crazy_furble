@@ -54,9 +54,10 @@
 	<div class="space-y-5 flex flex-col justify-center">
 		<h1 class="h1">Crazy furble!</h1>
 		<p class="text-center">activate the crazy furble :)</p>
-		<button class="btn variant-filled-primary" on:click={connect}>Connect</button>
 		{#if loading}
 		<ProgressBar value={undefined} />
+		{:else}
+		<button class="btn variant-filled-primary" on:click={connect}>Connect</button>
 		{/if}
 	</div>
 	{:else}
