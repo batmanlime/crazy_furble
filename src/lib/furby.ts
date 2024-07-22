@@ -1,6 +1,6 @@
 const fluff_service = 'dab91435-b5a1-e29c-b041-bcd562613bde';
 
-var furby_uuids = {
+let furby_uuids: Record<any,any> = {
     'GeneralPlusListen': 'dab91382-b5a1-e29c-b041-bcd562613bde',
     'GeneralPlusWrite':  'dab91383-b5a1-e29c-b041-bcd562613bde',
     'NordicListen':      'dab90756-b5a1-e29c-b041-bcd562613bde',
@@ -11,7 +11,7 @@ var furby_uuids = {
     'FileWrite':         'dab90758-b5a1-e29c-b041-bcd562613bde'
 }
 
-var file_transfer_modes = {
+let file_transfer_modes: Record<any,any> = {
     1: 'EndCurrentTransfer',
     2: 'ReadyToReceive',
     3: 'FileTransferTimeout',
@@ -66,7 +66,7 @@ function sleep(t: number) {
     return new Promise(resolve  => setTimeout(resolve, t));
 }
 
-function buf2hex(buffer: ArrayBuffer) {
+function buf2hex(buffer: any) {
     return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
 }
 
@@ -141,6 +141,222 @@ function onFurbySensorData(buf: DataView) {
         li.textContent = `${k}: ${v}`;
         ul.appendChild(li);
     }*/
+}
+
+function enableEyes(b: boolean) {
+    return sendGPCmd([0xcd, b ? 1 : 0], NO_RESPONSE);
+}
+
+function makeDLCFilename(dlcurl: string) {
+    return dlcurl.substr(dlcurl.lastIndexOf('/') + 1).padStart(12, '_').toUpperCase();
+}
+
+export async function fetchAndUploadDLC(dlcurl: string) {
+    let response = await fetch(dlcurl);
+    if (response.status != 200) {
+        throw new Error('Failed to fetch DLC ' + dlcurl);
+        alert('DLC not found on server');
+    }
+
+    let buf = await response.arrayBuffer();
+    let chksumOriginal = adler32(buf);
+    log('Fetched DLC from server:', dlcurl, ' checksum 0x' + chksumOriginal.toString(16));
+    //var progress = document.getElementById('dlcprogress');
+    //progress.max = buf.byteLength;
+
+    try {
+        //progress.style.display = 'block';
+        //progress.removeAttribute('value');
+        let c = 0;
+        //log('Clearing all DLC slots...');
+        //await deleteAllDLCSlots();
+        await enableEyes(false); // eyes off, save battery
+        await setAntennaColor(0,0,0);
+        let name = makeDLCFilename(dlcurl);
+        let started = false;
+        await uploadDLC(buf, name, (current, total, maxRx) => {
+            if (c % 100 == 0) 
+                //progress.value = current;
+            if (c % 500 == 0)
+                console.log(`transfer: ${current}/${total} maxRx:${maxRx}`);
+            if (!started) {
+                started = true;
+                alert('Eyes off while Uploading...');
+            }
+            c++; 
+        });
+        alert('DLC uploaded!');
+    } catch (e: any) {
+        alert('DLC upload failed :(');
+        log(e.message);
+        console.error(e);
+        await setAntennaColor(255,0,0);
+        return;
+    } finally {
+        //progress.style.display = 'none';
+        await enableEyes(true); // eyes on
+    }
+
+    try { 
+        let slots = await getDLCInfo();
+        let filledSlot = slots.indexOf(SLOT_FILLED);
+        let activeSlot = slots.indexOf(SLOT_ACTIVE);
+        if (filledSlot == -1)
+            throw new Error('Upload failed - no slots filled');
+        else {
+            log('DLC was uploaded to slot ' + filledSlot);
+        }
+        if (activeSlot != -1) {
+            log('deactivating old DLC in slot ' + activeSlot);
+            await deactivateDLC(activeSlot)
+        }
+        
+        let slotInfo = await getDLCSlotInfo(filledSlot);
+        if (slotInfo.checksum != chksumOriginal) {
+            throw new Error('Expected checksum of 0x' + chksumOriginal.toString(16) + ' but got 0x' + slotInfo.checksum.toString(16));
+        }
+        await loadAndActivateDLC(filledSlot);
+        slots = await getDLCInfo();
+        if (slots.indexOf(SLOT_ACTIVE) != filledSlot)
+            throw new Error('Failed to activate');
+        alert('DLC activated!');
+        await setAntennaColor(0,255,0);
+    } catch (e: any) {
+        alert('DLC activation failed :(');
+        log(e.message);
+        console.log(e);
+        await setAntennaColor(255,0,0);
+    } 
+}
+
+function adler32(buf: ArrayBuffer) {
+    const MOD_ADLER = 65521;
+    let dv = new DataView(buf);
+    let a=1, b=0;
+    for (let i=0; i < buf.byteLength; i++) {
+        a = (a + dv.getUint8(i)) % MOD_ADLER;
+        b = (b + a) % MOD_ADLER;
+    }
+    let checksum = (b << 16) >>> 0;
+    return (checksum | a) >>> 0;
+}
+
+async function adler32test(url: string) {
+    let resp = await fetch(url);
+    let buf = await resp.arrayBuffer();
+    console.log(buf);
+    let checksum = adler32(buf);
+    console.log('0x' + checksum.toString(16));
+}
+
+function uploadDLC(dlcbuf: any, filename: string, progresscb: (pos: number,size: number,maxRx: number) => void) {
+    if (isTransferring) return Promise.reject('Transfer already in progress');
+    let size = dlcbuf.byteLength;
+    if (filename.length != 12)
+        return Promise.reject('Filename must be 12 chars long');
+    let initcmd = [0x50, 0x00,
+        size >> 16 & 0xff, size >> 8 & 0xff, size & 0xff, 
+        2];
+    let encoder = new TextEncoder();//'utf-8'
+    initcmd = initcmd.concat(Array.from(encoder.encode(filename)));
+    initcmd = initcmd.concat([0,0]);
+    isTransferring = false;
+    let sendPos = 0;
+    let rxPackets = 0;
+    let CHUNK_SIZE = 20;
+    let MAX_BUFFERED_PACKETS = 10;
+    let maxRx = 0;
+    let failedWrites = 0;
+
+    return new Promise((resolve, reject) => {
+        let transferNextChunk = () => {
+            if (!isTransferring)
+                return;
+            if (rxPackets > MAX_BUFFERED_PACKETS) {
+                log(`rxPackets=${rxPackets}, pausing...`);
+                setTimeout(transferNextChunk, 100);
+                return;
+            }
+            let chunk = dlcbuf.slice(sendPos, sendPos + CHUNK_SIZE);
+            if (chunk.byteLength > 0) {
+                furby_chars.FileWrite.writeValue(chunk).then(() => {
+                    lastCommandSent = performance.now();
+                    sendPos += chunk.byteLength;
+                    if (progresscb)
+                        progresscb(sendPos, size, maxRx);
+                    if (sendPos < size)
+                        setTimeout(transferNextChunk, 1);
+                    else 
+                        log('Sent final packet');
+                }).catch((error: any) => {
+                    //removeGPListenCallback(hnd)
+                    console.log(error);
+                    if (++failedWrites > 3) {
+                        log('FileWrite.writeValue failed, will retry');
+                        setTimeout(transferNextChunk, 16);
+                    } else {
+                        log('FileWrite.writeValue failed, giving up after too many failures');
+                        isTransferring = false;
+                        removeGPListenCallback(hnd);
+                        reject(error);
+                    }
+                    
+                    //reject(error);
+                });  
+            } else {
+                log('tried to send empty packet??');
+                isTransferring = false;
+            }
+        }
+
+        let hnd = addGPListenCallback([0x24], buf => {
+            let fileMode = buf.getUint8(1);
+            log('Got FileWrite callback: ' + file_transfer_modes[fileMode]);
+            if (fileMode == file_transfer_lookup.FileTransferTimeout ||
+                fileMode == file_transfer_lookup.FileReceivedErr) {
+                isTransferring = false;
+                removeGPListenCallback(hnd);
+                setNordicNotifications(false,null);
+                reject('File Transfer error');
+            } else if (fileMode == file_transfer_lookup.FileReceivedOk) {
+                // TODO: sometimes we get a FileReceivedErr after getting FileReceivedOk
+                // so we should add a delay before resolving to allow for failure
+                log(`sendPos: ${sendPos} / ${size}`);
+                isTransferring = false;
+                removeGPListenCallback(hnd);
+                setNordicNotifications(false,null);
+                resolve(null);
+            } else if (fileMode == file_transfer_lookup.ReadyToReceive) {
+                isTransferring = true;
+                transferNextChunk();
+            }
+        });
+
+        let nordicCallback = (buf: DataView) => {
+            let code = buf.getUint8(0);
+            if (code == 0x09) {
+                rxPackets = buf.getUint8(1);
+                if (rxPackets > maxRx) maxRx = rxPackets;
+                //console.log(`NordicListen GotPacketAck ${rxPackets}`);
+                //transferNextChunk();
+            } else if (code == 0x0a) {
+                log('NordicListen GotPacketOverload', buf);
+            } else {
+                log('NordicListen uknown', buf);
+            }
+        };
+
+        setNordicNotifications(true, nordicCallback).then(() => {
+            log('Sending init DLC: ', buf2hex(initcmd), 'file length 0x' + size.toString(16));
+            furby_chars.GeneralPlusWrite.writeValue(new Uint8Array(initcmd)).catch((error: any) => reject(error));
+        }).catch((error: any) => reject(error));
+    });
+}
+
+function setNordicNotifications(enable: boolean, cb: any) {
+    let data = [9, (enable ? 1 : 0), 0];
+    nordicListener = enable ? cb : null;
+    return furby_chars.NordicWrite.writeValue(new Uint8Array(data));
 }
 
 async function getDLCInfo() {
@@ -275,8 +491,21 @@ function deleteDLC(slot: any) {
     return sendGPCmd([0x74, slot], [0x74]);
 }
 
+function loadDLC(slot: any) {
+    return sendGPCmd([0x60, slot], [0xdc]);
+}
+
 function deactivateDLC(slot: any) {
     return sendGPCmd([0x62, slot], [0xdc]);
+}
+
+function activateDLC() {
+    return sendGPCmd([0x61], [0xdc]);
+}
+
+async function loadAndActivateDLC(slot: any) {
+    await loadDLC(slot);
+    await activateDLC();
 }
 
 async function deleteAllDLCSlots() {
@@ -284,6 +513,21 @@ async function deleteAllDLCSlots() {
         await deactivateDLC(i);
         await deleteDLC(i);
     }
+}
+
+export function triggerAction(input: number, index: number, subindex: number, specific: number): any {
+    let data = []
+    if (arguments.length == 1)
+        data = [0x10, 0, input];
+    else if (arguments.length == 2)
+        data = [0x11, 0, input, index];
+    else if (arguments.length == 3)
+        data = [0x12, 0, input, index, subindex];
+    else if (arguments.length == 4)
+        data = [0x13, 0, input, index, subindex, specific];
+    else 
+        throw 'Must specify at least an input';
+    return sendGPCmd(data, NO_RESPONSE);
 }
 
 async function getFirmwareVersion() {
