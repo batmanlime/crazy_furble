@@ -45,9 +45,10 @@
 		{#if connected}
 		<section>
 			{#each Object.entries(furby.dlcdata) as [file,data]}
-			<button class="btn variant-filled-primary" on:click={async () => {
+			<button class="btn variant-filled-secondary" on:click={async () => {
 				console.log("Run",file)
 				await furby.fetchAndUploadDLC('dlcs/'+file);
+				dlcButtons = data.buttons
 				//setupDLCButtons(params);
 				//showSection('actions');
 			}}>{data.title}</button>
@@ -55,7 +56,7 @@
 		</section>
 		<section>
 			{#each dlcButtons as button}
-			<button class="btn variant-filled-primary" on:click={async () => {
+			<button class="btn variant-filled-secondary" on:click={async () => {
 				console.log("Action",button.title,button.action)
 				furby.triggerAction.apply(null, button.action)
 			}}>{button.title}</button>
