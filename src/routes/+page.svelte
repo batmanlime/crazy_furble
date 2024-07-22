@@ -63,7 +63,7 @@
 	{#if dlcButtons.length == 0}
 	<div class="space-y-5 flex flex-col justify-center">
 		{#if loading}
-		<h1 class="h1 text-center">Loading DLC!</h1>
+		<h1 class="h1 text-center">Loading!</h1>
 		<ProgressBar value={progress} />
 		{:else}
 		<h1 class="h1 text-center">Select DLC!</h1>
@@ -77,6 +77,13 @@
 				loading = false
 			}}>{data.title}</button>
 			{/each}
+		</section>
+		<section>
+			<button class="btn variant-filled-secondary" on:click={async () => {
+				loading = true
+				await furby.deleteAllDLCSlots()
+				loading = false
+			}}>Clear all DLCs</button>
 		</section>
 		{/if}
 	</div>

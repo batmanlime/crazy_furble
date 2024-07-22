@@ -515,7 +515,7 @@ async function loadAndActivateDLC(slot: any) {
     await activateDLC();
 }
 
-async function deleteAllDLCSlots() {
+export async function deleteAllDLCSlots() {
     for (let i=0; i<14; i++) {
         await deactivateDLC(i);
         await deleteDLC(i);
