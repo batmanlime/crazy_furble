@@ -67,7 +67,7 @@
 		<h1 class="h1 text-center">Loading!</h1>
 		<ProgressBar value={progress} />
 		{#if progress!=undefined}
-		<p class="text-center">{Math.floor(furby.totalDownload * progress)}/{furby.totalDownload}</p>
+		<p class="text-center">{Math.floor(furby.totalDownload * progress / 100)}/{furby.totalDownload}</p>
 		{/if}
 		{:else}
 		<h1 class="h1 text-center">Select DLC!</h1>
