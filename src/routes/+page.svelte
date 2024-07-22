@@ -41,7 +41,7 @@
 	})
 </script>
 
-<div class="block card card-hover p-4 w-1/4 aspect-square absolute left-5 top-1/2 -translate-y-1/2">
+<div class="block card card-hover p-4 w-1/4 aspect-square absolute left-5 top-1/2 -translate-y-1/2 overflow-y-auto">
 	{#each output as str}
 		<p>{str}</p>
 	{/each}

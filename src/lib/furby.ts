@@ -60,6 +60,8 @@ function log(...args: any[]) {
     var s = bits.join(' ')
     console.log(s);
     output.unshift(s)
+    if (output.length > 100)
+        output.pop()
     output = output
     /*let o = document.getElementById('out');
     o.textContent += s + "\n";
@@ -185,14 +187,14 @@ export async function fetchAndUploadDLC(dlcurl: string) {
                 console.log(`transfer: ${current}/${total} maxRx:${maxRx}`);
             if (!started) {
                 started = true;
-                alert('Eyes off while Uploading...');
+                log('Eyes off while Uploading...');
             }
             c++; 
         });
-        //alert('DLC uploaded!');
+        log('DLC uploaded!');
         progress = 1
     } catch (e: any) {
-        alert('DLC upload failed :(');
+        log('DLC upload failed :(');
         log(e.message);
         console.error(e);
         await setAntennaColor(255,0,0);
@@ -224,7 +226,7 @@ export async function fetchAndUploadDLC(dlcurl: string) {
         slots = await getDLCInfo();
         if (slots.indexOf(SLOT_ACTIVE) != filledSlot)
             throw new Error('Failed to activate');
-        alert('DLC activated!');
+        log('DLC activated!');
         await setAntennaColor(0,255,0);
     } catch (e: any) {
         alert('DLC activation failed :(');
