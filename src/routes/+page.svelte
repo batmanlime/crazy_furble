@@ -41,13 +41,13 @@
 	})
 </script>
 
-<div class="block card card-hover p-4 w-1/4 aspect-square absolute left-5 top-1/2 -translate-y-1/2 overflow-y-auto">
+<div class="block card card-hover p-4 w-1/4 aspect-square absolute left-5 top-[50vh] -translate-y-1/2 overflow-y-auto">
 	{#each output as str}
 		<p>{str}</p>
 	{/each}
 </div>
 
-<div class="block card card-hover p-4 w-1/4 aspect-square absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 flex justify-center">
+<div class="block card card-hover p-4 w-1/4 aspect-square absolute left-1/2 top-[50vh] -translate-y-1/2 -translate-x-1/2 flex justify-center">
 	{#if !connected}
 	<div class="space-y-5 flex flex-col justify-center">
 		<h1 class="h1">Crazy furble!</h1>
