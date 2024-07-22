@@ -45,7 +45,7 @@
 			{#each Object.entries(furby.dlcdata) as [file,data]}
 			<button class="btn variant-filled-primary" on:click={async () => {
 				console.log("Run",file)
-				await furby.fetchAndUploadDLC('dlc/'+file);
+				await furby.fetchAndUploadDLC('dlcs/'+file);
 				//setupDLCButtons(params);
 				//showSection('actions');
 			}}>{data.title}</button>
