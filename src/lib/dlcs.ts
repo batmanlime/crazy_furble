@@ -30,8 +30,8 @@ export default [
         "file": "german.dlc", 
         "title": "German",
         "buttons": [
-            { "title": "Speech", "action": [75,0,2,1] },
-            { "title": "Speech2", "action": [75,0,2,2] },
+            { "title": "Speech", "action": [75,0,0,1] },
+            { "title": "Speech2", "action": [75,0,0,2] },
         ]
     },
     {
