@@ -41,7 +41,9 @@
 		<p>Ben Glenn:</p>
 		<section>
 			<button class="btn variant-filled-primary" style="--opacity: {connected?0.5:1};" on:click={connect}>Connect</button>
-			{#if connected}
+		</section>
+		{#if connected}
+		<section>
 			{#each Object.entries(furby.dlcdata) as [file,data]}
 			<button class="btn variant-filled-primary" on:click={async () => {
 				console.log("Run",file)
@@ -50,13 +52,15 @@
 				//showSection('actions');
 			}}>{data.title}</button>
 			{/each}
+		</section>
+		<section>
 			{#each dlcButtons as button}
 			<button class="btn variant-filled-primary" on:click={async () => {
 				console.log("Action",button.title,button.action)
 				furby.triggerAction.apply(null, button.action)
 			}}>{button.title}</button>
 			{/each}
-			{/if}
 		</section>
+		{/if}
 	</div>
 </div>
