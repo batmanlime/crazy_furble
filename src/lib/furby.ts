@@ -39,7 +39,7 @@ let file_transfer_lookup = flipDict(file_transfer_modes);
 let device: any;
 export let isConnected = false;
 export let dlcdata: Record<string,any> = {};
-export let progress: number|null = null;
+export let progress: number|undefined = undefined;
 export let output: string[] = []
 let isTransferring = false;
 let furby_chars: Record<string,any> = {};
@@ -200,10 +200,10 @@ export async function fetchAndUploadDLC(dlcurl: string) {
         await setAntennaColor(255,0,0);
         return;
     } finally {
-        progress = null
+        progress = undefined
         await enableEyes(true); // eyes on
     }
-    progress = null
+    progress = undefined
     try { 
         let slots = await getDLCInfo();
         let filledSlot = slots.indexOf(SLOT_FILLED);

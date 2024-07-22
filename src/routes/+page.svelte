@@ -4,16 +4,17 @@
 	import dlcs from '$lib/dlcs';
     import { ProgressBar } from '@skeletonlabs/skeleton';
 	let connected = false
-	let connecting = false
+	let loading = false
 	let output: string[] = []
+	let progress: number|undefined = undefined
 	let dlcButtons: {title: string,action: any}[] = []
 
-	function connect(){
+	async function connect(){
 		if (furby.isConnected) return
 		console.log("Attempting connect")
-		connecting = true
-		furby.doConnect()
-		connecting = false
+		loading = true
+		await furby.doConnect()
+		loading = false
 	}
 	
 	async function loadDLCIndex() {
@@ -35,6 +36,7 @@
 			window.requestAnimationFrame(onFrame)
 			connected = furby.isConnected
 			output = furby.output
+			progress = furby.progress
 		}
 		window.requestAnimationFrame(onFrame)
 		loadDLCIndex()
@@ -53,7 +55,7 @@
 		<h1 class="h1">Crazy furble!</h1>
 		<p class="text-center">activate the crazy furble :)</p>
 		<button class="btn variant-filled-primary" on:click={connect}>Connect</button>
-		{#if connecting}
+		{#if loading}
 		<ProgressBar value={undefined} />
 		{/if}
 	</div>
@@ -62,11 +64,16 @@
 	<div class="space-y-5 flex flex-col justify-center">
 		<h1 class="h1">Select DLC!</h1>
 		<section>
+			{#if loading}
+			<ProgressBar value={progress} />
+			{/if}
 			{#each Object.entries(furby.dlcdata) as [file,data]}
 			<button class="btn variant-filled-secondary" on:click={async () => {
 				console.log("Run",file)
+				loading = true
 				await furby.fetchAndUploadDLC('dlcs/'+file);
 				dlcButtons = data.buttons
+				loading = false
 			}}>{data.title}</button>
 			{/each}
 		</section>
