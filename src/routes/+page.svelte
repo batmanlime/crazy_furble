@@ -10,7 +10,7 @@
 	let dlcButtons: {title: string,action: any}[] = []
 
 	async function connect(){
-		if (furby.isConnected) return
+		if (furby.isConnected||loading) return
 		console.log("Attempting connect")
 		loading = true
 		await furby.doConnect()
@@ -62,11 +62,12 @@
 	{:else}
 	{#if dlcButtons.length == 0}
 	<div class="space-y-5 flex flex-col justify-center">
-		<h1 class="h1">Select DLC!</h1>
+		{#if loading}
+		<h1 class="h1 text-center">Loading DLC!</h1>
+		<ProgressBar value={progress} />
+		{:else}
+		<h1 class="h1 text-center">Select DLC!</h1>
 		<section>
-			{#if loading}
-			<ProgressBar value={progress} />
-			{/if}
 			{#each Object.entries(furby.dlcdata) as [file,data]}
 			<button class="btn variant-filled-secondary" on:click={async () => {
 				console.log("Run",file)
@@ -77,10 +78,11 @@
 			}}>{data.title}</button>
 			{/each}
 		</section>
+		{/if}
 	</div>
 	{:else}
 	<div class="space-y-5 flex flex-col justify-center">
-		<h1 class="h1">Control him!</h1>
+		<h1 class="h1 text-center">Control him!</h1>
 		<button class="btn variant-filled-secondary" on:click={async () => {
 			dlcButtons = []
 		}}>Back</button>

@@ -182,7 +182,7 @@ export async function fetchAndUploadDLC(dlcurl: string) {
         let started = false;
         await uploadDLC(buf, name, (current, total, maxRx) => {
             if (c % 100 == 0) 
-                progress = current/total
+                progress = current/total * 100
             if (c % 500 == 0)
                 console.log(`transfer: ${current}/${total} maxRx:${maxRx}`);
             if (!started) {
@@ -192,7 +192,7 @@ export async function fetchAndUploadDLC(dlcurl: string) {
             c++; 
         });
         log('DLC uploaded!');
-        progress = 1
+        progress = 100
     } catch (e: any) {
         log('DLC upload failed :(');
         log(e.message);
@@ -574,7 +574,7 @@ export async function doConnect() {
         log('Connecting to GATT Server...');
         server = await device.gatt.connect();
     } catch (e: any) {
-        alert('Failed to connect');
+        log('Failed to connect');
         log(e.message);
         return;
     }
