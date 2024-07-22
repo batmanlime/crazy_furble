@@ -40,6 +40,7 @@ let device: any;
 export let isConnected = false;
 export let dlcdata: Record<string,any> = {};
 export let progress: number|undefined = undefined;
+export let totalDownload: number = 0;
 export let output: string[] = []
 let isTransferring = false;
 let furby_chars: Record<string,any> = {};
@@ -182,6 +183,7 @@ export async function fetchAndUploadDLC(dlcurl: string) {
         let started = false;
         await uploadDLC(buf, name, (current, total, maxRx) => {
             if (c % 100 == 0) 
+                totalDownload = total
                 progress = current/total * 100
             if (c % 500 == 0)
                 console.log(`transfer: ${current}/${total} maxRx:${maxRx}`);
