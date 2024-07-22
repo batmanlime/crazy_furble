@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as furby from '$lib/furby'
     import { onMount } from 'svelte';
-	import dlcs from '../dlcs';
+	import dlcs from '$lib/dlcs';
 	let connected = false
 	let dlcButtons: {title: string,action: any}[] = []
 
