@@ -39,6 +39,8 @@ let file_transfer_lookup = flipDict(file_transfer_modes);
 let device: any;
 export let isConnected = false;
 export let dlcdata: Record<string,any> = {};
+export let progress: number|null = null;
+export let output: string[] = []
 let isTransferring = false;
 let furby_chars: Record<string,any> = {};
 let gp_listen_callbacks: any[] = [];
@@ -57,6 +59,8 @@ function log(...args: any[]) {
     }
     var s = bits.join(' ')
     console.log(s);
+    output.unshift(s)
+    output = output
     /*let o = document.getElementById('out');
     o.textContent += s + "\n";
     o.scrollTop = o.scrollHeight;*/
@@ -176,7 +180,7 @@ export async function fetchAndUploadDLC(dlcurl: string) {
         let started = false;
         await uploadDLC(buf, name, (current, total, maxRx) => {
             if (c % 100 == 0) 
-                //progress.value = current;
+                progress = current/total
             if (c % 500 == 0)
                 console.log(`transfer: ${current}/${total} maxRx:${maxRx}`);
             if (!started) {
@@ -185,7 +189,8 @@ export async function fetchAndUploadDLC(dlcurl: string) {
             }
             c++; 
         });
-        alert('DLC uploaded!');
+        //alert('DLC uploaded!');
+        progress = 1
     } catch (e: any) {
         alert('DLC upload failed :(');
         log(e.message);
@@ -193,10 +198,10 @@ export async function fetchAndUploadDLC(dlcurl: string) {
         await setAntennaColor(255,0,0);
         return;
     } finally {
-        //progress.style.display = 'none';
+        progress = null
         await enableEyes(true); // eyes on
     }
-
+    progress = null
     try { 
         let slots = await getDLCInfo();
         let filledSlot = slots.indexOf(SLOT_FILLED);
@@ -226,7 +231,7 @@ export async function fetchAndUploadDLC(dlcurl: string) {
         log(e.message);
         console.log(e);
         await setAntennaColor(255,0,0);
-    } 
+    }
 }
 
 function adler32(buf: ArrayBuffer) {
